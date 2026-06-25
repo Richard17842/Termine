@@ -329,43 +329,46 @@ const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwuFm_vYPLgaGLydOfQ5
 // In-memory cache
 let apptCache = [];
 
-/* ─── Sheets API ──────────────────────────── */
-async function sheetsGet() {
-  const url = SHEETS_URL + '?action=getAll&t=' + Date.now();
-  const res = await fetch(url);
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.appointments || [];
+/* ─── Sheets API (JSONP for GET, no-cors POST) ── */
+function sheetsGet() {
+  return new Promise((resolve, reject) => {
+    const cbName = '_cb_' + Date.now();
+    const url = SHEETS_URL + '?action=getAll&callback=' + cbName + '&t=' + Date.now();
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      script.remove();
+      reject(new Error('Timeout'));
+    }, 10000);
+    window[cbName] = (data) => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      script.remove();
+      if (data.error) reject(new Error(data.error));
+      else resolve(data.appointments || []);
+    };
+    script.src = url;
+    script.onerror = () => { clearTimeout(timeout); reject(new Error('Script load error')); };
+    document.head.appendChild(script);
+  });
+}
+
+async function sheetsPost(body) {
+  const form = new FormData();
+  form.append('payload', JSON.stringify(body));
+  await fetch(SHEETS_URL, { method: 'POST', mode: 'no-cors', body: form });
 }
 
 async function sheetsSave(appt) {
-  const res = await fetch(SHEETS_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'save', appointment: appt })
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data;
+  await sheetsPost({ action: 'save', appointment: appt });
 }
 
 async function sheetsUpdate(appt) {
-  const res = await fetch(SHEETS_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'update', appointment: appt })
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data;
+  await sheetsPost({ action: 'update', appointment: appt });
 }
 
 async function sheetsDelete(id) {
-  const res = await fetch(SHEETS_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'delete', id })
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data;
+  await sheetsPost({ action: 'delete', id });
 }
 
 function setSyncStatus(state, text) {
