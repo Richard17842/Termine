@@ -426,21 +426,13 @@ tr:hover td { background: var(--bg3); }
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwuFm_vYPLgaGLydOfQ5YzC0WL6l4_g8-EqopDwCDfWC3AfDPrOkV3dUvkPuUWNfUCrMg/exec';
 let apptCache = [];
 
-function sheetsGet() {
-  return new Promise((resolve, reject) => {
-    const cbName = '_cb_' + Date.now();
-    const url = SHEETS_URL + '?action=getAll&callback=' + cbName + '&t=' + Date.now();
-    const script = document.createElement('script');
-    const timeout = setTimeout(() => { delete window[cbName]; script.remove(); reject(new Error('Timeout')); }, 10000);
-    window[cbName] = (data) => {
-      clearTimeout(timeout); delete window[cbName]; script.remove();
-      if (data.error) reject(new Error(data.error));
-      else resolve(data.appointments || []);
-    };
-    script.src = url;
-    script.onerror = () => { clearTimeout(timeout); reject(new Error('Script load error')); };
-    document.head.appendChild(script);
-  });
+async function sheetsGet() {
+  const proxy = 'https://corsproxy.io/?url=';
+  const url = proxy + encodeURIComponent(SHEETS_URL + '?action=getAll&t=' + Date.now());
+  const res = await fetch(url);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.appointments || [];
 }
 async function sheetsPost(body) {
   const form = new FormData();
