@@ -263,7 +263,7 @@ tr:hover td { background: var(--bg3); }
 </head>
 <body>
 
-<div class="topbar">
+<div class="topbar" id="topbar">
   <div class="logo-mark">1KOMMA5<span>°</span></div>
   <div class="topbar-divider"></div>
   <div class="topbar-sub">Terminverwaltung</div>
@@ -407,11 +407,11 @@ tr:hover td { background: var(--bg3); }
 <!-- CUSTOMER VIEW -->
 <div id="view-customer" class="view">
   <div class="main">
-    <div class="banner info" style="margin-bottom:1rem">
+    <div class="banner info" style="margin-bottom:1rem" id="cust-demo-banner">
       <i class="ti ti-info-circle" style="flex-shrink:0;margin-top:1px"></i>
       <div><strong>Demo-Ansicht</strong> — So sieht der Kundenlink aus. Wähle unten einen Termin.</div>
     </div>
-    <div class="cust-selector">
+    <div class="cust-selector" id="cust-selector">
       <label style="margin:0;white-space:nowrap">Termin wählen:</label>
       <select id="cust-picker" onchange="renderCustomerView()" style="flex:1;max-width:360px"></select>
       <button class="btn sm ghost" onclick="refreshPicker()"><i class="ti ti-refresh"></i></button>
@@ -741,27 +741,37 @@ async function chooseAlt(id,altIdx){
 async function checkUrlParam(){
   const p=new URLSearchParams(location.search).get('appt');
   if(!p)return;
-  showView('customer');
+  // Hide demo elements — customer sees only their appointment
+  const banner=document.getElementById('cust-demo-banner');
+  const selector=document.getElementById('cust-selector');
+  if(banner)banner.style.display='none';
+  if(selector)selector.style.display='none';
   setSyncStatus('loading','Lädt Termin...');
   try {
     const appts=await sheetsGet();
     apptCache=appts;
-    setSyncStatus('ok','Verbunden · Google Sheets');
+    setSyncStatus('ok','');
     const sel=document.getElementById('cust-picker');
     appts.forEach(a=>{
       const o=document.createElement('option');
       o.value=a.id;
-      const lbl={pending:'Ausstehend',confirmed:'Bestätigt',declined:'Abgelehnt'};
-      o.textContent=`${a.name} – ${fmtDate(a.date,a.time)} [${lbl[a.status]||a.status}]`;
       sel.appendChild(o);
     });
     sel.value=p; renderCustomerView();
-  } catch(err){setSyncStatus('err','Fehler');}
+  } catch(err){
+    document.getElementById('customer-content').innerHTML=`<div class="cust-wrap"><div class="banner error"><i class="ti ti-alert-circle"></i> Termin konnte nicht geladen werden.</div></div>`;
+    setSyncStatus('err','Fehler');
+  }
 }
 
 document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
 document.getElementById('f-time').value='10:00';
-if(new URLSearchParams(location.search).get('appt')){checkUrlParam();}else{loadAdmin();}
+if(new URLSearchParams(location.search).get('appt')){
+  document.getElementById('topbar').style.display='none';
+  document.getElementById('view-admin').style.display='none';
+  document.getElementById('view-customer').classList.add('active');
+  checkUrlParam();
+}else{loadAdmin();}
 </script>
 </body>
 </html>
