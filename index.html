@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1Komma5Grad – Terminverwaltung</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --green-dark: #1B4F3A;
+    --green-mid: #2D7A5A;
+    --green-light: #E1F5EE;
+    --green-border: #5DCAA5;
+    --green-text: #085041;
+    --amber: #BA7517;
+    --amber-bg: #FAEEDA;
+    --amber-text: #633806;
+    --red: #E24B4A;
+    --red-bg: #FCEBEB;
+    --red-border: #F09595;
+    --red-text: #501313;
+    --bg: #F7F8F6;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.1);
+    --border-strong: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text-2: #5a5a56;
+    --text-3: #9a9a94;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --green-light: #0a2e22;
+      --green-border: #1D9E75;
+      --green-text: #9FE1CB;
+      --amber-bg: #2a1e06;
+      --amber-text: #FAC775;
+      --red-bg: #2a0a0a;
+      --red-border: #A32D2D;
+      --red-text: #F7C1C1;
+      --bg: #111210;
+      --surface: #1c1d1b;
+      --border: rgba(255,255,255,0.09);
+      --border-strong: rgba(255,255,255,0.18);
+      --text: #f0f0ec;
+      --text-2: #a8a8a2;
+      --text-3: #606060;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+
+  /* Layout */
+  .topbar { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 1.5rem; height: 56px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 100; }
+  .logo { width: 34px; height: 34px; border-radius: 8px; background: var(--green-dark); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo span { color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 0.02em; text-align: center; line-height: 1.2; }
+  .brand { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 12px; color: var(--text-2); }
+  .topbar-nav { margin-left: auto; display: flex; gap: 4px; }
+  .nav-btn { padding: 6px 14px; border-radius: 8px; font-size: 13px; border: 0.5px solid var(--border-strong); background: transparent; color: var(--text-2); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.12s; }
+  .nav-btn:hover { background: var(--bg); color: var(--text); }
+  .nav-btn.active { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+
+  .main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; }
+  .card + .card { margin-top: 1rem; }
+
+  /* Section headings */
+  .sh { font-size: 13px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem; }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  @media (max-width: 600px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+  .metric { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .metric-val { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
+  .metric-lbl { font-size: 12px; color: var(--text-2); }
+  .metric.green .metric-val { color: var(--green-mid); }
+  .metric.amber .metric-val { color: var(--amber); }
+  .metric.red .metric-val { color: var(--red); }
+
+  /* Form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-row { display: flex; flex-direction: column; gap: 4px; }
+  .form-row.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 500; color: var(--text-2); }
+  input, select, textarea {
+    width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: 8px;
+    font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit;
+    transition: border-color 0.12s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green-mid); }
+  textarea { resize: vertical; min-height: 64px; }
+  .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+  /* Buttons */
+  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border-strong); background: transparent; color: var(--text); display: inline-flex; align-items: center; gap: 6px; transition: all 0.12s; }
+  .btn:hover { background: var(--bg); }
+  .btn:active { transform: scale(0.98); }
+  .btn.primary { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+  .btn.primary:hover { background: #153D2D; }
+  .btn.danger { color: var(--red); border-color: var(--red-border); }
+  .btn.danger:hover { background: var(--red-bg); }
+  .btn.sm { padding: 5px 10px; font-size: 12px; }
+  .btn.ghost { border-color: transparent; color: var(--text-2); }
+  .btn.ghost:hover { color: var(--text); background: var(--bg); }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .badge.pending { background: var(--amber-bg); color: var(--amber-text); }
+  .badge.pending::before { background: var(--amber); }
+  .badge.confirmed { background: var(--green-light); color: var(--green-text); }
+  .badge.confirmed::before { background: var(--green-mid); }
+  .badge.declined { background: var(--red-bg); color: var(--red-text); }
+  .badge.declined::before { background: var(--red); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 0.5px solid var(--border); white-space: nowrap; }
+  td { padding: 12px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+
+  /* Banners */
+  .banner { padding: 10px 14px; border-radius: 8px; font-size: 13px; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+  .banner.success { background: var(--green-light); border: 0.5px solid var(--green-border); color: var(--green-text); }
+  .banner.info { background: #E6F1FB; border: 0.5px solid #85B7EB; color: #0C447C; }
+  .banner.warning { background: var(--amber-bg); border: 0.5px solid #FAC775; color: var(--amber-text); }
+  @media (prefers-color-scheme: dark) {
+    .banner.info { background: #042C53; border-color: #378ADD; color: #B5D4F4; }
+  }
+
+  /* Customer card */
+  .cust-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 12px; }
+  .cust-card.confirmed { border-color: var(--green-border); }
+  .cust-card.declined { border-color: var(--red-border); }
+  .cust-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 1rem; }
+  .cust-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--green-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cust-icon i { font-size: 22px; color: var(--green-mid); }
+  .cust-title { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+  .cust-meta { font-size: 13px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+  .cust-meta + .cust-meta { margin-top: 2px; }
+  .note-box { background: var(--bg); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; }
+  .note-title { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+  .alt-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .alt-row:last-child { border-bottom: none; }
+
+  /* Link box */
+  .link-box { background: var(--bg); border: 0.5px solid var(--border); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .link-url { font-size: 11px; font-family: 'SF Mono', 'Fira Mono', monospace; color: var(--text-2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Alt slot inputs */
+  .alt-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .alt-input-row input { flex: 1; }
+
+  /* Views */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Customer selector */
+  .cust-selector { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-3); }
+  .empty-state i { font-size: 32px; display: block; margin-bottom: 10px; }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1a1a18; color: #f0f0ec; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 999; white-space: nowrap; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--text-2); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .divider { height: 0.5px; background: var(--border); margin: 1.25rem 0; }
+
+  /* Customer view full page */
+  .cust-page { max-width: 520px; margin: 0 auto; padding: 2rem 1rem; }
+  .cust-page-header { text-align: center; margin-bottom: 2rem; }
+  .cust-page-logo { width: 48px; height: 48px; border-radius: 12px; background: var(--green-dark); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+  .cust-page-logo span { color: #fff; font-size: 13px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><span>1K5</span></div>
+  <div>
+    <div class="brand">1Komma5Grad</div>
+    <div class="brand-sub">Terminverwaltung</div>
+  </div>
+  <nav class="topbar-nav">
+    <button class="nav-btn active" onclick="showView('admin')" id="nav-admin">
+      <i class="ti ti-layout-dashboard"></i> Admin
+    </button>
+    <button class="nav-btn" onclick="showView('customer')" id="nav-customer">
+      <i class="ti ti-user"></i> Kundenansicht
+    </button>
+  </nav>
+</div>
+
+<!-- ═══════════════════════════ ADMIN VIEW ═══════════════════════════ -->
+<div id="view-admin" class="view active">
+  <div class="main">
+
+    <!-- Metrics -->
+    <div class="metrics" id="metrics">
+      <div class="metric"><div class="metric-val" id="m-total">0</div><div class="metric-lbl">Termine gesamt</div></div>
+      <div class="metric amber"><div class="metric-val" id="m-pending">0</div><div class="metric-lbl">Ausstehend</div></div>
+      <div class="metric green"><div class="metric-val" id="m-confirmed">0</div><div class="metric-lbl">Bestätigt</div></div>
+      <div class="metric red"><div class="metric-val" id="m-declined">0</div><div class="metric-lbl">Abgelehnt</div></div>
+    </div>
+
+    <!-- Create form -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="sh">Neuen Termin erstellen</div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Kundenname *</label>
+          <input type="text" id="f-name" placeholder="z.B. Max Mustermann">
+        </div>
+        <div class="form-row">
+          <label>E-Mail (optional)</label>
+          <input type="email" id="f-email" placeholder="max@beispiel.de">
+        </div>
+        <div class="form-row">
+          <label>Termin-Typ *</label>
+          <select id="f-type">
+            <option>Erstberatung Solar</option>
+            <option>Angebotspräsentation</option>
+            <option>Vor-Ort-Besichtigung</option>
+            <option>Netzanmeldung Beratung</option>
+            <option>Wartungstermin</option>
+            <option>Übergabegespräch</option>
+            <option>Wärmepumpen-Beratung</option>
+            <option>Wallbox-Installation</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Zuständiger Berater</label>
+          <input type="text" id="f-advisor" placeholder="z.B. Anna Schmidt">
+        </div>
+        <div class="form-row">
+          <label>Datum *</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="form-row">
+          <label>Uhrzeit *</label>
+          <input type="time" id="f-time">
+        </div>
+        <div class="form-row">
+          <label>Dauer</label>
+          <select id="f-duration">
+            <option>30 Minuten</option>
+            <option>45 Minuten</option>
+            <option selected>60 Minuten</option>
+            <option>90 Minuten</option>
+            <option>120 Minuten</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Ort / Treffpunkt</label>
+          <input type="text" id="f-location" placeholder="z.B. Online (Teams) oder Adresse">
+        </div>
+        <div class="form-row full">
+          <label>Notiz für den Kunden (optional)</label>
+          <textarea id="f-note" placeholder="z.B. Bitte aktuelle Stromrechnung und Fotos des Daches mitbringen."></textarea>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="margin-bottom:8px">
+        <div class="sh" style="margin-bottom:8px">Alternativtermine (optional)</div>
+        <div id="alt-slots-wrap"></div>
+        <button class="btn sm ghost" onclick="addAltSlot()">
+          <i class="ti ti-plus"></i> Alternativtermin hinzufügen
+        </button>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn" onclick="clearForm()"><i class="ti ti-x"></i> Zurücksetzen</button>
+        <button class="btn primary" onclick="createAppointment()">
+          <i class="ti ti-calendar-plus"></i> Termin erstellen & Link generieren
+        </button>
+      </div>
+      <div id="create-result"></div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div class="sh" style="margin:0">Alle Termine</div>
+        <button class="btn sm ghost" onclick="loadAdmin()"><i class="ti ti-refresh"></i> Aktualisieren</button>
+      </div>
+      <div id="table-loading" style="text-align:center;padding:2rem;color:var(--text-3)">
+        <span class="spinner"></span>
+      </div>
+      <div id="table-wrap" class="table-wrap" style="display:none">
+        <table>
+          <thead>
+            <tr>
+              <th>Kunde</th>
+              <th>Berater</th>
+              <th>Termin</th>
+              <th>Typ</th>
+              <th>Status</th>
+              <th>Kundenantwort</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="admin-tbody"></tbody>
+        </table>
+      </div>
+      <div id="table-empty" class="empty-state" style="display:none">
+        <i class="ti ti-calendar-off"></i>
+        Noch keine Termine erstellt.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ CUSTOMER VIEW ═══════════════════════════ -->
+<div id="view-customer" class="view">
+  <div class="main">
+    <div class="banner info">
+      <i class="ti ti-info-circle" style="flex-shrink:0;margin-top:1px"></i>
+      <div><strong>Demo-Ansicht</strong> — So sieht der Kundenlink aus. Wähle unten einen Termin, um die Ansicht zu simulieren.</div>
+    </div>
+
+    <div class="cust-selector">
+      <label style="white-space:nowrap;margin:0">Termin wählen:</label>
+      <select id="cust-picker" onchange="renderCustomerView()" style="flex:1;max-width:360px"></select>
+      <button class="btn sm" onclick="refreshPicker()"><i class="ti ti-refresh"></i></button>
+    </div>
+
+    <div id="customer-content"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const STORAGE_KEY = '1k5_appts_v1';
+
+function getAppts() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+function saveAppts(a) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(a));
+}
+
+function genId() {
+  return 'apt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+}
+
+function fmtDate(date, time) {
+  if (!date) return '–';
+  try {
+    const d = new Date(date + 'T' + (time || '00:00'));
+    return d.toLocaleDateString('de-DE', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' })
+      + (time ? ' · ' + time + ' Uhr' : '');
+  } catch(e) { return date + ' ' + time; }
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.getElementById('nav-' + v).classList.add('active');
+  if (v === 'customer') { refreshPicker(); }
+  if (v === 'admin') { loadAdmin(); }
+}
+
+/* ─── Alt slots ─────────────────────────── */
+let altSlots = [];
+
+function addAltSlot() {
+  altSlots.push({ date: '', time: '' });
+  renderAltSlots();
+}
+
+function removeAltSlot(i) {
+  altSlots.splice(i, 1);
+  renderAltSlots();
+}
+
+function renderAltSlots() {
+  const wrap = document.getElementById('alt-slots-wrap');
+  wrap.innerHTML = '';
+  altSlots.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'alt-input-row';
+    row.innerHTML = `
+      <input type="date" value="${s.date}" onchange="altSlots[${i}].date=this.value" style="flex:1">
+      <input type="time" value="${s.time}" onchange="altSlots[${i}].time=this.value" style="flex:1">
+      <button class="btn sm ghost" onclick="removeAltSlot(${i})"><i class="ti ti-x"></i></button>`;
+    wrap.appendChild(row);
+  });
+}
+
+/* ─── Create ─────────────────────────────── */
+function createAppointment() {
+  const name = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const type = document.getElementById('f-type').value;
+  const advisor = document.getElementById('f-advisor').value.trim();
+  const date = document.getElementById('f-date').value;
+  const time = document.getElementById('f-time').value;
+  const duration = document.getElementById('f-duration').value;
+  const location = document.getElementById('f-location').value.trim();
+  const note = document.getElementById('f-note').value.trim();
+  const res = document.getElementById('create-result');
+
+  if (!name || !date || !time) {
+    res.innerHTML = `<div class="banner warning" style="margin-top:12px"><i class="ti ti-alert-circle"></i> Bitte Name, Datum und Uhrzeit ausfüllen.</div>`;
+    return;
+  }
+
+  const id = genId();
+  const validAlts = altSlots.filter(s => s.date && s.time).map(s => ({ date: s.date, time: s.time }));
+  const appt = { id, name, email, type, advisor, date, time, duration, location, note, altSlots: validAlts, status: 'pending', customerNote: '', chosenAlt: null, createdAt: new Date().toISOString(), respondedAt: null };
+
+  const appts = getAppts();
+  appts.unshift(appt);
+  saveAppts(appts);
+
+  const link = window.location.href.split('?')[0] + '?appt=' + id;
+  res.innerHTML = `
+    <div class="banner success" style="margin-top:12px">
+      <i class="ti ti-circle-check" style="flex-shrink:0"></i>
+      <div>
+        <strong>${name}</strong> – Termin erstellt! Kopiere den Link unten und schicke ihn dem Kunden.
+        <div class="link-box">
+          <span class="link-url" id="gen-link">${link}</span>
+          <button class="btn sm" onclick="copyLink('${id}')"><i class="ti ti-copy"></i> Kopieren</button>
+        </div>
+        <div style="font-size:11px;color:var(--green-text);margin-top:6px">
+          Hinweis: Da dies eine lokale HTML-Datei ist, funktioniert der Link nur wenn der Kunde dieselbe Datei geöffnet hat. 
+          Für echte Links → Datei auf einem Webserver hosten (z.B. GitHub Pages, Netlify).
+        </div>
+      </div>
+    </div>`;
+
+  clearForm();
+  loadAdmin();
+}
+
+function copyLink(id) {
+  const link = window.location.href.split('?')[0] + '?appt=' + id;
+  navigator.clipboard.writeText(link).then(() => toast('Link kopiert!')).catch(() => {
+    prompt('Link kopieren:', link);
+  });
+}
+
+function clearForm() {
+  ['f-name','f-email','f-advisor','f-location','f-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-time').value = '10:00';
+  altSlots = [];
+  renderAltSlots();
+}
+
+/* ─── Admin table ─────────────────────────── */
+function loadAdmin() {
+  const loading = document.getElementById('table-loading');
+  const wrap = document.getElementById('table-wrap');
+  const empty = document.getElementById('table-empty');
+  const appts = getAppts();
+
+  document.getElementById('m-total').textContent = appts.length;
+  document.getElementById('m-pending').textContent = appts.filter(a => a.status === 'pending').length;
+  document.getElementById('m-confirmed').textContent = appts.filter(a => a.status === 'confirmed').length;
+  document.getElementById('m-declined').textContent = appts.filter(a => a.status === 'declined').length;
+
+  loading.style.display = 'none';
+
+  if (appts.length === 0) {
+    wrap.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  wrap.style.display = 'block';
+  empty.style.display = 'none';
+
+  const labelMap = { pending: 'Ausstehend', confirmed: 'Bestätigt', declined: 'Abgelehnt' };
+  const tbody = document.getElementById('admin-tbody');
+  tbody.innerHTML = '';
+
+  appts.forEach(a => {
+    const tr = document.createElement('tr');
+    const altInfo = a.altSlots && a.altSlots.length ? `<br><span style="font-size:11px;color:var(--text-3)">${a.altSlots.length} Alternativtermin(e)</span>` : '';
+    const chosenAlt = a.chosenAlt ? `<br><span style="font-size:11px;color:var(--green-mid)">↳ ${fmtDate(a.chosenAlt.date, a.chosenAlt.time)}</span>` : '';
+    const custNote = a.customerNote
+      ? `<span style="font-size:12px;color:var(--text-2);font-style:italic">"${a.customerNote}"</span>`
+      : `<span style="color:var(--text-3)">–</span>`;
+    const responded = a.respondedAt ? `<br><span style="font-size:10px;color:var(--text-3)">${new Date(a.respondedAt).toLocaleDateString('de-DE')}</span>` : '';
+
+    tr.innerHTML = `
+      <td>
+        <strong>${a.name}</strong>
+        ${a.email ? `<br><span style="font-size:11px;color:var(--text-2)">${a.email}</span>` : ''}
+      </td>
+      <td style="color:var(--text-2)">${a.advisor || '–'}</td>
+      <td>
+        ${fmtDate(a.date, a.time)}${altInfo}${chosenAlt}
+        <br><span style="font-size:11px;color:var(--text-3)">${a.duration}${a.location ? ' · ' + a.location : ''}</span>
+      </td>
+      <td style="color:var(--text-2)">${a.type}</td>
+      <td><span class="badge ${a.status}">${labelMap[a.status]}</span>${responded}</td>
+      <td>${custNote}</td>
+      <td style="white-space:nowrap;display:flex;gap:6px">
+        <button class="btn sm" onclick="copyLink('${a.id}')"><i class="ti ti-link"></i></button>
+        <button class="btn sm danger" onclick="deleteAppt('${a.id}')"><i class="ti ti-trash"></i></button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function deleteAppt(id) {
+  if (!confirm('Termin wirklich löschen?')) return;
+  saveAppts(getAppts().filter(a => a.id !== id));
+  loadAdmin();
+  toast('Termin gelöscht.');
+}
+
+/* ─── Customer picker ─────────────────────── */
+function refreshPicker() {
+  const appts = getAppts();
+  const sel = document.getElementById('cust-picker');
+  sel.innerHTML = '';
+  if (appts.length === 0) {
+    sel.innerHTML = '<option>Keine Termine vorhanden</option>';
+    document.getElementById('customer-content').innerHTML = `<div class="empty-state"><i class="ti ti-calendar-off"></i>Erstelle zuerst einen Termin im Admin-Bereich.</div>`;
+    return;
+  }
+  appts.forEach(a => {
+    const o = document.createElement('option');
+    o.value = a.id;
+    const lbl = { pending: 'Ausstehend', confirmed: 'Bestätigt', declined: 'Abgelehnt' };
+    o.textContent = `${a.name} – ${fmtDate(a.date, a.time)} [${lbl[a.status]}]`;
+    sel.appendChild(o);
+  });
+  renderCustomerView();
+}
+
+/* ─── Customer view ───────────────────────── */
+function renderCustomerView() {
+  const id = document.getElementById('cust-picker').value;
+  if (!id || id.startsWith('Keine')) return;
+  const a = getAppts().find(x => x.id === id);
+  if (!a) return;
+
+  const cc = document.getElementById('customer-content');
+  const statusClass = a.status;
+  const statusLabel = { pending: 'Bitte bestätigen', confirmed: 'Bestätigt ✓', declined: 'Abgelehnt' };
+
+  let altHtml = '';
+  if (a.altSlots && a.altSlots.length) {
+    const rows = a.altSlots.map((s, i) => `
+      <div class="alt-row">
+        <i class="ti ti-calendar-event" style="color:var(--text-3)"></i>
+        <span style="flex:1">${fmtDate(s.date, s.time)}</span>
+        ${a.status === 'pending' ? `<button class="btn sm primary" onclick="chooseAlt('${a.id}',${i})"><i class="ti ti-check"></i> Wählen</button>` : ''}
+      </div>`).join('');
+    altHtml = `<div class="note-box" style="margin-bottom:12px">
+      <div class="note-title"><i class="ti ti-calendar-event"></i> Alternativtermine</div>
+      ${rows}
+    </div>`;
+  }
+
+  const noteHtml = a.note ? `<div class="note-box" style="margin-bottom:12px">
+    <div class="note-title"><i class="ti ti-note"></i> Hinweis von 1Komma5Grad</div>
+    <p style="font-size:13px;color:var(--text-2);margin-top:4px">${a.note}</p>
+  </div>` : '';
+
+  let actionHtml = '';
+  if (a.status === 'pending') {
+    actionHtml = `
+      <div class="divider"></div>
+      <div class="form-row" style="margin-bottom:10px">
+        <label>Ihre Nachricht an uns (optional)</label>
+        <textarea id="cust-msg" placeholder="z.B. Ich bin etwas später da, ca. 5 min." style="min-height:52px"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" onclick="respond('${a.id}','confirmed')">
+          <i class="ti ti-circle-check"></i> Termin bestätigen
+        </button>
+        <button class="btn danger" onclick="respond('${a.id}','declined')">
+          <i class="ti ti-circle-x"></i> Termin ablehnen
+        </button>
+      </div>`;
+  } else if (a.status === 'confirmed') {
+    actionHtml = `<div class="banner success"><i class="ti ti-circle-check"></i> Sie haben diesen Termin bestätigt. Wir freuen uns auf das Gespräch!</div>`;
+  } else {
+    actionHtml = `<div class="banner" style="background:var(--red-bg);border-color:var(--red-border);color:var(--red-text)"><i class="ti ti-circle-x"></i> Sie haben diesen Termin abgelehnt.</div>`;
+  }
+
+  cc.innerHTML = `<div class="cust-card ${statusClass}">
+    <div class="cust-header">
+      <div class="cust-icon"><i class="ti ti-solar-panel"></i></div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+          <div class="cust-title">${a.type}</div>
+          <span class="badge ${statusClass}">${statusLabel[statusClass]}</span>
+        </div>
+        <div class="cust-meta"><i class="ti ti-calendar" style="font-size:14px"></i> ${fmtDate(a.date, a.time)}</div>
+        <div class="cust-meta"><i class="ti ti-clock" style="font-size:14px"></i> ${a.duration}</div>
+        ${a.location ? `<div class="cust-meta"><i class="ti ti-map-pin" style="font-size:14px"></i> ${a.location}</div>` : ''}
+        ${a.advisor ? `<div class="cust-meta"><i class="ti ti-user" style="font-size:14px"></i> Ihr Ansprechpartner: ${a.advisor}</div>` : ''}
+        <div class="cust-meta"><i class="ti ti-user-circle" style="font-size:14px"></i> ${a.name}</div>
+      </div>
+    </div>
+    ${noteHtml}
+    ${altHtml}
+    ${actionHtml}
+    ${a.customerNote && a.status !== 'pending' ? `<div class="note-box" style="margin-top:12px"><div class="note-title">Ihre Nachricht</div><p style="font-size:13px;color:var(--text-2);font-style:italic">"${a.customerNote}"</p></div>` : ''}
+  </div>`;
+}
+
+function respond(id, status) {
+  const note = document.getElementById('cust-msg')?.value || '';
+  const appts = getAppts();
+  const idx = appts.findIndex(a => a.id === id);
+  if (idx < 0) return;
+  appts[idx].status = status;
+  appts[idx].customerNote = note;
+  appts[idx].respondedAt = new Date().toISOString();
+  saveAppts(appts);
+  renderCustomerView();
+  loadAdmin();
+  toast(status === 'confirmed' ? 'Termin bestätigt!' : 'Termin abgelehnt.');
+}
+
+function chooseAlt(id, altIdx) {
+  const appts = getAppts();
+  const idx = appts.findIndex(a => a.id === id);
+  if (idx < 0) return;
+  const alt = appts[idx].altSlots[altIdx];
+  appts[idx].status = 'confirmed';
+  appts[idx].chosenAlt = alt;
+  appts[idx].customerNote = `Alternativtermin gewählt: ${fmtDate(alt.date, alt.time)}`;
+  appts[idx].respondedAt = new Date().toISOString();
+  saveAppts(appts);
+  renderCustomerView();
+  loadAdmin();
+  toast('Alternativtermin ausgewählt!');
+}
+
+/* ─── URL param handling ─────────────────── */
+function checkUrlParam() {
+  const p = new URLSearchParams(location.search).get('appt');
+  if (p) {
+    showView('customer');
+    setTimeout(() => {
+      const sel = document.getElementById('cust-picker');
+      if (sel) {
+        sel.value = p;
+        renderCustomerView();
+      }
+    }, 100);
+  }
+}
+
+/* ─── Init ───────────────────────────────── */
+document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+document.getElementById('f-time').value = '10:00';
+loadAdmin();
+checkUrlParam();
+</script>
+</body>
+</html>
